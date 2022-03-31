@@ -1,53 +1,43 @@
 package io.daysofcode;
 
+import java.io.BufferedInputStream;
 import java.io.IOException;
-import java.net.URI;
-import java.net.http.HttpClient;
-import java.net.http.HttpRequest;
-import java.net.http.HttpResponse;
+import java.net.MalformedURLException;
+import java.net.URL;
 import java.util.Scanner;
 
-import com.google.gson.Gson;
-import com.google.gson.JsonObject;
 
 public class Main {
-	/*
-	 * Continuar depois:
-	 * https://www.mocklab.io/blog/which-java-http-client-should-i-use-in-2020/
-	 * https://www.twilio.com/blog/5-ways-to-make-http-requests-in-java
-	 * 	Ver a biblioteca jackson com o exemplo dado no último link acima!
-	 * */
+	private static String download(String urlStr) throws IOException {
+	    URL url = new URL(urlStr);
+	    StringBuilder ret = new StringBuilder();
+	    try (BufferedInputStream bis = new BufferedInputStream(url.openStream());) {
+	    	byte[] buffer = new byte[1024];
+		    int count = 0;
+		    while ((count = bis.read(buffer, 0, 1024)) != -1) {
+		        ret.append(new String(buffer, 0, count));
+		    }
+	    }	    
+
+	    return ret.toString();
+	}
+
 	public static void main(String[] args) {
 		Scanner scanner = new Scanner(System.in);
 		System.out.println("Digite a sua API Key, aqui:");
-		String api_key = scanner.nextLine();
-		String url = String.format("https://imdb-api.com/en/API/Top250Movies/%s", api_key);
-		
+		String apiKey = scanner.nextLine();
+		String urlStr = String.format("https://imdb-api.com/en/API/Top250Movies/%s", apiKey);
 		try {
-			HttpClient client = HttpClient.newHttpClient();
-			HttpRequest request = HttpRequest
-			        .newBuilder(URI.create(url))
-			        .GET()
-			        .header("accept", "application/json")
-			        .build();
-			HttpResponse<String> response = client.send(request, HttpResponse.BodyHandlers.ofString());
-			if (response.statusCode() == 200) {
-				System.out.printf("A resposta veio com Status Code: %d.\n", response.statusCode());
-				String string = response.body();
-				JsonObject obj = new Gson().fromJson(string, JsonObject.class);
-				System.out.println("A resposta é um JSON? " + (obj.isJsonObject() ? "Sim." : "Não."));
-				System.out.println("\nConteúdo da resposta:\n\n" + obj.toString());
-			} else {
-				
-				System.out.println("Terminou sem exceções com o status: " + response.statusCode());
-			}
+			System.out.println("Assim, o conteúdo da resposta desta API do IMDB é:\n");
+			System.out.println(download(urlStr));
+		} catch (MalformedURLException e) {
+			System.out.println("A url não é válida!");
 		} catch (IOException e) {
-			System.out.println("Falha na obtenção dos dados da web!");
-		} catch (InterruptedException e) {
-			System.out.println("Falha na gestão das threads!");
+			System.out.println("Erro ao abrir a conexão!");
 		} finally {
-			System.out.println("Fim da execução!");
+			System.out.println("\nFim da execução!");
 		}
+		
 		scanner.close();
 	}
 
